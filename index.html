@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Game Interaktif Crosstok</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f8ff;
+    text-align: center;
+    margin: 0;
+    padding: 15px;
+}
+
+h1 {
+    background: #17324d;
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px #ccc;
+}
+
+select, button, input {
+    padding: 12px;
+    margin: 5px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+button {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.red {
+    background: #e91e63;
+    color: white;
+}
+
+.blue {
+    background: #168aad;
+    color: white;
+}
+
+table {
+    border-collapse: collapse;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 600px;
+    table-layout: fixed;
+}
+
+th, td {
+    border: 1px solid #aaa;
+    height: 35px;
+    text-align: center;
+}
+
+th {
+    background: #eaf2f8;
+    cursor: pointer;
+}
+
+.red-selected {
+    background: #e91e63 !important;
+    color: white;
+}
+
+.blue-selected {
+    background: #168aad !important;
+    color: white;
+}
+
+.cross {
+    background: #ffd6e5;
+    color: #c2185b;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.question {
+    background: #fff0c2;
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+#feedback {
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 10px;
+    background: #f1f5f9;
+}
+
+#score {
+    color: #168aad;
+    font-weight: bold;
+}
+
+@media(max-width:500px) {
+    th, td {
+        height: 27px;
+        font-size: 12px;
+    }
+
+    .container {
+        padding: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🧮 CROSSTOK</h1>
+<p>Jom belajar darab menggunakan kaedah darab silang!</p>
+
+<div class="container">
+
+    <h2>🎯 Misi Darab Silang</h2>
+
+    <label>Pilih aras soalan:</label>
+    <br>
+
+    <select id="level" onchange="newQuestion()">
+        <option value="easy">Aras 1 - Mudah</option>
+        <option value="medium">Aras 2 - Sederhana</option>
+        <option value="hard">Aras 3 - Mencabar</option>
+    </select>
+
+    <div class="question">
+        <span id="a">3</span>
+        ×
+        <span id="b">4</span>
+        = ?
+    </div>
+
+    <p>
+        Klik nombor di bahagian atas untuk memilih
+        strip merah dan nombor di sebelah kiri
+        untuk memilih strip biru.
+    </p>
+
+    <button class="red" onclick="showInstruction('red')">
+        Strip Merah
+    </button>
+
+    <button class="blue" onclick="showInstruction('blue')">
+        Strip Biru
+    </button>
+
+    <p id="instruction">Pilih nombor pada papan.</p>
+
+    <div style="overflow-x:auto">
+        <table id="board"></table>
+    </div>
+
+    <h3>
+        Jumlah persilangan:
+        <span id="crossCount">0</span>
+    </h3>
+
+    <p>Masukkan jawapan kamu:</p>
+
+    <input
+        type="number"
+        id="answer"
+        placeholder="Jawapan"
+    >
+
+    <br>
+
+    <button onclick="checkAnswer()">
+        ✅ Semak Jawapan
+    </button>
+
+    <button onclick="newQuestion()">
+        🔄 Soalan Baharu
+    </button>
+
+    <button onclick="clearStrips()">
+        🧹 Padam Strip
+    </button>
+
+    <div id="feedback">
+        Selamat bermain! Cuba jawab soalan ini.
+    </div>
+
+    <h3>Markah: <span id="score">0</span></h3>
+
+</div>
+
+<script>
+let a = 3;
+let b = 4;
+
+let red = [];
+let blue = [];
+
+let score = 0;
+let solved = false;
+let stripMode = "red";
+
+function showInstruction(mode) {
+    stripMode = mode;
+
+    if (mode === "red") {
+        document.getElementById("instruction").innerText =
+            "Strip merah dipilih. Klik nombor di bahagian atas papan.";
+    } else {
+        document.getElementById("instruction").innerText =
+            "Strip biru dipilih. Klik nombor di sebelah kiri papan.";
+    }
+}
+
+function createBoard() {
+    const board = document.getElementById("board");
+
+    board.innerHTML = "";
+
+    let header = document.createElement("tr");
+
+    let corner = document.createElement("th");
+    corner.innerText = "×";
+    header.appendChild(corner);
+
+    for (let c = 1; c <= 10; c++) {
+        let th = document.createElement("th");
+
+        th.innerText = c;
+
+        if (red.includes(c)) {
+            th.classList.add("red-selected");
+        }
+
+        th.onclick = function() {
+            toggleStrip("red", c);
+        };
+
+        header.appendChild(th);
+    }
+
+    board.appendChild(header);
+
+    for (let r = 1; r <= 10; r++) {
+        let tr = document.createElement("tr");
+
+        let th = document.createElement("th");
+
+        th.innerText = r;
+
+        if (blue.includes(r)) {
+            th.classList.add("blue-selected");
+        }
+
+        th.onclick = function() {
+            toggleStrip("blue", r);
+        };
+
+        tr.appendChild(th);
+
+        for (let c = 1; c <= 10; c++) {
+            let td = document.createElement("td");
+
+            if (red.includes(c) && blue.includes(r)) {
+                td.classList.add("cross");
+                td.innerText = "×";
+            }
+
+            tr.appendChild(td);
+        }
+
+        board.appendChild(tr);
+    }
+
+    updateCount();
+}
+
+function toggleStrip(type, number) {
+    let strips = type === "red" ? red : blue;
+
+    if (strips.includes(number)) {
+        strips.splice(strips.indexOf(number), 1);
+    } else {
+        strips.push(number);
+    }
+
+    createBoard();
+
+    document.getElementById("feedback").innerText =
+        "Bagus! Kira titik persilangan dan cuba jawab.";
+}
+
+function updateCount() {
+    document.getElementById("crossCount").innerText =
+        red.length * blue.length;
+}
+
+function clearStrips() {
+    red = [];
+    blue = [];
+
+    createBoard();
+
+    document.getElementById("feedback").innerText =
+        "Strip telah dikosongkan. Cuba lagi!";
+}
+
+function newQuestion() {
+    const level = document.getElementById("level").value;
+
+    let min, max;
+
+    if (level === "easy") {
+        min = 2;
+        max = 5;
+    } else if (level === "medium") {
+        min = 4;
+        max = 8;
+    } else {
+        min = 6;
+        max = 10;
+    }
+
+    a = Math.floor(Math.random() * (max - min + 1)) + min;
+    b = Math.floor(Math.random() * (max - min + 1)) + min;
+
+    document.getElementById("a").innerText = a;
+    document.getElementById("b").innerText = b;
+
+    document.getElementById("answer").value = "";
+
+    document.getElementById("feedback").innerText =
+        "Selesaikan soalan menggunakan kaedah Crosstok.";
+
+    red = [];
+    blue = [];
+
+    solved = false;
+
+    createBoard();
+}
+
+function checkAnswer() {
+    const input = document.getElementById("answer").value;
+    const answer = Number(input);
+    const correct = a * b;
+
+    const feedback = document.getElementById("feedback");
+
+    if (input.trim() === "") {
+        feedback.innerText = "Sila masukkan jawapan dahulu!";
+        return;
+    }
+
+    if (answer === correct) {
+        feedback.innerText =
+            "🎉 Tahniah! " + a + " × " + b +
+            " = " + correct + ". Jawapan kamu betul!";
+
+        feedback.style.background = "#d1fae5";
+
+        if (!solved) {
+            score += 10;
+
+            document.getElementById("score").innerText = score;
+
+            solved = true;
+        }
+
+    } else {
+        feedback.innerText =
+            "Belum tepat. Cuba kira semula titik persilangan!";
+
+        feedback.style.background = "#ffe4e6";
+    }
+}
+
+newQuestion();
+</script>
+
+</body>
+</html>
